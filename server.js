@@ -7,18 +7,22 @@ const PORT = process.env.PORT || 3000;
 app.use(cors({ origin: '*' }));
 app.use(express.json());
 
-app.post('/api/login', async (req, res) => {
+// 修改 server.js 以支援所有 LOHAS API 的轉發
+app.post('/api/proxy/*', async (req, res) => {
+    // 取得網址中 /api/proxy/ 之後的路徑
+    const targetPath = req.params[0]; 
+    const targetUrl = `https://lohastest.realtime.tw/webapi/v010/${targetPath}`;
+    
     try {
-        const response = await fetch('https://lohastest.realtime.tw/webapi/v010/officialWed/login', {
+        const response = await fetch(targetUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(req.body) 
+            body: JSON.stringify(req.body)
         });
         const data = await response.json();
         res.json(data);
     } catch (error) {
-        console.error('代理伺服器錯誤:', error);
-        res.status(500).json({ code: "500", message: "中繼伺服器轉發失敗" });
+        res.status(500).json({ error: 'Proxy forward failed' });
     }
 });
 
