@@ -1,41 +1,37 @@
 const express = require('express');
 const cors = require('cors');
-
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors({ origin: '*' }));
+app.use(cors());
 app.use(express.json());
 
-// 健康檢查用：打根路徑會看到 OK，方便確認服務活著
-app.get('/', (req, res) => {
-    res.send('LOHAS Proxy is running. Use POST /api/proxy/<path>');
-});
+app.get('/', (req, res) => res.send('LOHAS Proxy Active'));
 
-// 轉發所有 LOHAS API
-// server.js 裡面轉發的部分
+// 核心轉發邏輯
 app.post('/api/proxy/*', async (req, res) => {
     const targetPath = req.params[0]; 
+    // 自動組合成測試站完整路徑
     const targetUrl = `https://lohastest.realtime.tw/webapi/v010/${targetPath}`;
     
+    console.log(`[Proxy Request] → ${targetUrl}`);
+    console.log(`[Body Payload]`, JSON.stringify(req.body));
+
     try {
         const response = await fetch(targetUrl, {
             method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json' // 這行絕對不能少
-            },
-            body: JSON.stringify(req.body) // 直接把前端傳來的 Body 轉字串轉發
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(req.body)
         });
         
         const data = await response.json();
+        console.log(`[Proxy Response] ← Status: ${response.status}`, data);
+        
         res.status(response.status).json(data);
     } catch (error) {
-        res.status(500).json({ error: '連線失敗' });
-    }
-});
+        console.error('[Proxy Error]', error.message);
+        res.status(500).json({ error: '連線至 LOHAS 伺服器失敗' });
     }
 });
 
-app.listen(PORT, () => {
-    console.log(`Proxy server is running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Proxy on port ${PORT}`));
