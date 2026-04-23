@@ -13,44 +13,26 @@ app.get('/', (req, res) => {
 });
 
 // 轉發所有 LOHAS API
+// server.js 裡面轉發的部分
 app.post('/api/proxy/*', async (req, res) => {
     const targetPath = req.params[0]; 
     const targetUrl = `https://lohastest.realtime.tw/webapi/v010/${targetPath}`;
     
-    console.log(`[Proxy] → ${targetUrl}`);
-    console.log(`[Proxy] body:`, JSON.stringify(req.body));
-
     try {
         const response = await fetch(targetUrl, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(req.body)
+            headers: { 
+                'Content-Type': 'application/json' // 這行絕對不能少
+            },
+            body: JSON.stringify(req.body) // 直接把前端傳來的 Body 轉字串轉發
         });
         
-        // 讀回 raw text，再嘗試當 JSON 解析
-        const rawText = await response.text();
-        console.log(`[Proxy] ← status ${response.status}, body:`, rawText.slice(0, 300));
-
-        // 把上游狀態碼也帶回前端
-        res.status(response.status);
-
-        try {
-            const data = JSON.parse(rawText);
-            res.json(data);
-        } catch {
-            // 上游回的不是 JSON（可能是 HTML 錯誤頁）
-            res.json({ 
-                error: 'Upstream returned non-JSON',
-                upstreamStatus: response.status,
-                body: rawText.slice(0, 500)
-            });
-        }
+        const data = await response.json();
+        res.status(response.status).json(data);
     } catch (error) {
-        console.error('[Proxy] forward error:', error);
-        res.status(500).json({ 
-            error: 'Proxy forward failed',
-            detail: error.message 
-        });
+        res.status(500).json({ error: '連線失敗' });
+    }
+});
     }
 });
 
