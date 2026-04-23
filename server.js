@@ -12,7 +12,7 @@ app.get('/', (req, res) => res.send('LOHAS Proxy Active'));
 app.post('/api/proxy/*', async (req, res) => {
     const targetPath = req.params[0]; 
     // 自動組合成測試站完整路徑
-    const targetUrl = `https://lohastest.realtime.tw/webapi/v010/${targetPath}`;
+    const targetUrl = `https://lohas.realtime.tw/webapi/v010/${targetPath}`;
     
     console.log(`[Proxy Request] → ${targetUrl}`);
     console.log(`[Body Payload]`, JSON.stringify(req.body));
